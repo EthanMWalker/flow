@@ -8,9 +8,9 @@ import pickle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from acflow import RealNVP
+from acflow import RealNVP, RealNVPLinear
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 
 
@@ -18,7 +18,8 @@ def get_mnist(batch_size):
   transform = transforms.Compose(
     [
       transforms.ToTensor(),
-      transforms.Normalize((0.1307,), (0.30811,))
+      transforms.Normalize((0.1307,), (0.30811,)),
+      transforms.Lambda(lambda x: torch.flatten(x))
     ]
   )
 
@@ -45,7 +46,7 @@ def train(model, train_loader, num_epochs=10):
   running_loss = 0
 
   with tqdm(total=len(train_loader)*num_epochs) as progress:
-    for epoch in range(num_epochs):
+    for _ in range(num_epochs):
       for i , (x, y) in enumerate(train_loader):
         x = x.to(device)
         y = y.to(device)
@@ -59,7 +60,7 @@ def train(model, train_loader, num_epochs=10):
 
         running_loss += loss.item()
 
-        progress.set_description(f'e: {epoch} l: {loss.item():.4f}')
+        progress.set_description(f'loss: {loss.item():.4f}')
         progress.update()
 
         if i % 100 == 99:
@@ -74,29 +75,29 @@ def test():
 
 if __name__ == '__main__':
 
-  model = RealNVP(
-    1, 10, 64,
+  model = RealNVPLinear(
+    784, 784, 24,
     distributions.MultivariateNormal(
       torch.zeros(784).to(device), torch.eye(784).to(device)
     ),
-    (1,28,28),
+    (1,784),
     device
   ).to(device)
 
-  train_loader, test_loader = get_mnist(256)
-  model, losses = train(model, train_loader, 100)
+  train_loader, test_loader = get_mnist(128)
+  model, losses = train(model, train_loader, 50)
 
   torch.save(
     {
     'model_state_dict': model.state_dict()
-    }, 'chkpt/test_64_4.tar'
+    }, 'chkpt/test_flat.tar'
   )
 
   plt.plot(losses)
-  plt.savefig('vis/test_64_4.png')
+  plt.savefig('vis/test_flat.png')
   # model.load_state_dict(torch.load('chkpt/test.tar')['model_state_dict'])
 
   samples = model.sample(100).detach().cpu().numpy()
 
-  with open('chkpt/test_samples_64_4.pickle','wb') as out:
+  with open('chkpt/test_samples_flat.pickle','wb') as out:
     pickle.dump(samples, out)
