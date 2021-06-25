@@ -13,6 +13,7 @@ class RealNVP(nn.Module):
     super().__init__()
 
     self.prior = prior
+    self.num_layers = num_layers
 
     self.flows = nn.ModuleList(
       [
