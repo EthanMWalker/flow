@@ -73,21 +73,21 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
             'optimizer_state_dict': optimizer.state_dict(),
             'epoch': epoch,
             'loss': loss
-          }, f'chkpt/mnist_{model.num_layers}_{epoch}.tar'
+          }, f'chkpt/mnist_{model.num_layers}_{lr:.8}_{epoch}.tar'
         )
   
   return model, losses
 
 
 if __name__ == '__main__':
+  train_loader, test_loader = get_mnist(128)
 
   for layers in [2**i for i in [0,1,2,3,4,5,6]]:
     for lr in [5e-8, 1e-6, 1e-5]:
-
       if layers < 8:
-        n_epochs = 500
+        n_epochs = 600
       else:
-        n_epochs = 100
+        n_epochs = 150
       
       model = RealNVP(
         1, 10, layers,
@@ -98,13 +98,12 @@ if __name__ == '__main__':
         device
       ).to(device)
 
-      train_loader, test_loader = get_mnist(128)
       model, losses = train(model, train_loader, lr, n_epochs, 10)
 
       torch.save(
         {
         'model_state_dict': model.state_dict()
-        }, f'chkpt/mnist_{layers}.tar'
+        }, f'chkpt/mnist_{layers}_{lr:.8}.tar'
       )
 
       # model.load_state_dict(torch.load('chkpt/test.tar')['model_state_dict'])
@@ -115,5 +114,5 @@ if __name__ == '__main__':
         'losses': losses
       }
 
-      with open(f'chkpt/mnist_samples_{layers}.pickle','wb') as out:
+      with open(f'chkpt/mnist_samples_{layers}_{lr:.8}.pickle','wb') as out:
         pickle.dump(out_dict, out)
