@@ -80,7 +80,7 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
 
 
 if __name__ == '__main__':
-  train_loader, test_loader = get_mnist(128)
+  train_loader, test_loader = get_mnist(512)
 
   for layers in [2**i for i in [0,1,2,3,4,5]]:
     for lr in [1e-10, 1e-8, 1e-6]:
@@ -93,7 +93,7 @@ if __name__ == '__main__':
         1, 10, layers, 10, (1,28,28), device
       ).to(device)
 
-      model, losses = train(model, train_loader, lr, n_epochs, 10)
+      model, losses = train(model, train_loader, lr, n_epochs, 100)
 
       torch.save(
         {
