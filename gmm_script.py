@@ -73,7 +73,7 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
             'optimizer_state_dict': optimizer.state_dict(),
             'epoch': epoch,
             'loss': loss
-          }, f'chkpt/mnist_sgd_{model.num_layers}_{lr:.8}_{epoch}.tar'
+          }, f'chkpt/backup/mnist_gmm_learned_{model.num_layers}_{lr:.8}_{epoch}.tar'
         )
   
   return model, losses
@@ -98,7 +98,7 @@ if __name__ == '__main__':
       torch.save(
         {
         'model_state_dict': model.state_dict()
-        }, f'chkpt/mnist_sgd_{layers}_{lr:.8}.tar'
+        }, f'chkpt/mnist_gmm_learned_{layers}_{lr:.8}.tar'
       )
 
       # model.load_state_dict(torch.load('chkpt/test.tar')['model_state_dict'])
@@ -109,5 +109,5 @@ if __name__ == '__main__':
         'losses': losses
       }
 
-      with open(f'chkpt/mnist_sgd_samples_{layers}_{lr:.8}.pickle','wb') as out:
+      with open(f'chkpt/mnist_gmm_learned_samples_{layers}_{lr:.8}.pickle','wb') as out:
         pickle.dump(out_dict, out)
