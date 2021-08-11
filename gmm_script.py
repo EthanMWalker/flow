@@ -90,12 +90,7 @@ if __name__ == '__main__':
         n_epochs = 10
       
       model = RealNVP(
-        1, 10, layers,
-        distributions.MultivariateNormal(
-          torch.zeros(784).to(device), torch.eye(784).to(device)
-        ),
-        (1,28,28),
-        device
+        1, 10, layers, 10, (1,28,28), device
       ).to(device)
 
       model, losses = train(model, train_loader, lr, n_epochs, 10)
