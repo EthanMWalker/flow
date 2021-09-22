@@ -1,12 +1,11 @@
 import torch
-from torch import distributions
 import torchvision as tv
 from torchvision.transforms import transforms
 
-import numpy as np
 import pickle
-import matplotlib.pyplot as plt
 from tqdm import tqdm
+# import numpy as np
+# import matplotlib.pyplot as plt
 
 from acflow import RealNVP
 
@@ -53,6 +52,7 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
         optimizer.zero_grad()
         loss = model.log_prob(x)
         loss = -loss.mean()
+        loss = torch.log(loss)
 
         loss.backward()
         optimizer.step()
@@ -80,17 +80,14 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
 
 
 if __name__ == '__main__':
-  train_loader, test_loader = get_mnist(512)
+  train_loader, test_loader = get_mnist(256)
 
-  for layers in [2**i for i in [0,1,2,3,4,5]]:
-    for lr in [1e-10, 1e-8, 1e-6]:
-      if layers < 8:
-        n_epochs = 100
-      else:
-        n_epochs = 10
+  for layers in [2**i for i in [3,4]]:
+    for lr in [1e-5, 1e-4]:
+      n_epochs = 500
       
       model = RealNVP(
-        1, 10, layers, 10, (1,28,28), device
+        1, 5, layers, 10, (1,28,28), device, 10
       ).to(device)
 
       model, losses = train(model, train_loader, lr, n_epochs, 100)

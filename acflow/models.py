@@ -9,7 +9,8 @@ LOG_2_PI = np.log(2*np.pi)
 
 class RealNVP(nn.Module):
 
-  def __init__(self, in_channels, mid_channels, num_layers, n_comps, shape, device):
+  def __init__(self, in_channels, mid_channels, num_layers, n_comps, 
+              shape, device, num_blocks=6):
     super().__init__()
 
     self.num_layers = num_layers
@@ -20,13 +21,15 @@ class RealNVP(nn.Module):
 
     self.flows = nn.ModuleList(
       [
-        AffineCoupling(in_channels, mid_channels) for _ in range(num_layers)
+        AffineCoupling(in_channels, mid_channels, num_blocks) 
+        for _ in range(num_layers)
       ]
     )
 
-    self.means = nn.Parameter(torch.ones(n_comps, self.gmm_dim).to(device))
-    # self.covs = nn.Parameter(torch.ones(n_comps, self.gmm_dim).to(device))
-    self.covs = torch.ones(n_comps, self.gmm_dim).to(device)
+    self.means = nn.Parameter(torch.randn(n_comps, self.gmm_dim).to(device))
+    self.covs = nn.Parameter(torch.rand(n_comps, self.gmm_dim).to(device))
+    # self.means = torch.randn(n_comps, self.gmm_dim).to(device)
+    # self.covs = torch.rand(n_comps, self.gmm_dim).to(device)
     self.mix = D.Categorical(torch.ones(self.n_comps,).to(self.device))
     self.prior = self.update_gmm()
 
@@ -38,10 +41,7 @@ class RealNVP(nn.Module):
   
   def update_gmm(self):
     comp = D.Independent(
-      D.Normal(
-        self.means.to(self.device), 
-        self.covs.to(self.device)
-      ), 1
+      D.Normal(self.means, self.covs), 1
     )
     gmm = D.MixtureSameFamily(self.mix, comp)
     return gmm
