@@ -83,7 +83,7 @@ if __name__ == '__main__':
   train_loader, test_loader = get_mnist(256)
 
   for layers in [2**i for i in [3,4]]:
-    for lr in [1e-5, 1e-4]:
+    for lr in [1e-10, 1e-8]:
       n_epochs = 500
       
       model = RealNVP(
