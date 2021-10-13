@@ -1,3 +1,3 @@
-from acflow.models import RealNVP, RealNVPLinear
+from acflow.models import RealNVP
 
-__all__ = [RealNVP, RealNVPLinear]
+__all__ = [RealNVP]

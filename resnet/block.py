@@ -1,12 +1,13 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules import padding
+from resnet.utils import WNConv2d
 
 class ResNetBlock(nn.Module):
 
   def __init__(self, in_channels, out_channels):
 
-    super().__init__()
+    super(ResNetBlock, self).__init__()
 
     self.norms = nn.ModuleList(
       [
@@ -17,8 +18,8 @@ class ResNetBlock(nn.Module):
 
     self.layers = nn.ModuleList(
       [
-        nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-        nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        WNConv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
+        WNConv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=True)
       ]
     )
   

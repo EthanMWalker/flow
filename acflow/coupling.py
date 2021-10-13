@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from resnet import ResNet
-from acflow.utils import MLP, Rescale
+from acflow.utils import Rescale
 
 class AffineCoupling(nn.Module):
 

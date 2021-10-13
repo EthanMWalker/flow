@@ -52,7 +52,7 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
         optimizer.zero_grad()
         loss = model.log_prob(x)
         loss = -loss.mean()
-        loss = torch.log(loss)
+        # loss = torch.log(loss)
 
         loss.backward()
         optimizer.step()
@@ -73,7 +73,7 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
             'optimizer_state_dict': optimizer.state_dict(),
             'epoch': epoch,
             'loss': loss
-          }, f'chkpt/backup/mnist_gmm_learned_{model.num_layers}_{lr:.8}_{epoch}.tar'
+          }, f'chkpt/backup/mnist_gmm_fixed_{model.num_layers}_{lr:.8}_{epoch}.tar'
         )
   
   return model, losses
@@ -82,9 +82,10 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
 if __name__ == '__main__':
   train_loader, test_loader = get_mnist(256)
 
-  for layers in [2**i for i in [3,4]]:
+  # for layers in [2**i for i in [5,6]]:
+  for layers in [1,2,4,8]:
     for lr in [1e-10, 1e-8]:
-      n_epochs = 500
+      n_epochs = 50
       
       model = RealNVP(
         1, 5, layers, 10, (1,28,28), device, 10
@@ -95,7 +96,7 @@ if __name__ == '__main__':
       torch.save(
         {
         'model_state_dict': model.state_dict()
-        }, f'chkpt/mnist_gmm_learned_{layers}_{lr:.8}.tar'
+        }, f'chkpt/mnist_gmm_fixed_{layers}_{lr:.8}.tar'
       )
 
       # model.load_state_dict(torch.load('chkpt/test.tar')['model_state_dict'])
@@ -106,5 +107,5 @@ if __name__ == '__main__':
         'losses': losses
       }
 
-      with open(f'chkpt/mnist_gmm_learned_samples_{layers}_{lr:.8}.pickle','wb') as out:
+      with open(f'chkpt/mnist_gmm_fixed_samples_{layers}_{lr:.8}.pickle','wb') as out:
         pickle.dump(out_dict, out)
