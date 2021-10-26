@@ -7,9 +7,9 @@ from tqdm import tqdm
 # import numpy as np
 # import matplotlib.pyplot as plt
 
-from acflow import RealNVP
+from acflow import RealNVP, OldRealNVP
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 
 
@@ -35,7 +35,7 @@ def get_mnist(batch_size):
     test_set, batch_size
   )
 
-  return train_loader, test_loader
+  return train_loader, test_loader, train_set, test_set
 
 def train(model, train_loader, lr, num_epochs=10, save_iters=5):
 
@@ -43,7 +43,7 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
   losses = []
   running_loss = 0
 
-  with tqdm(total=len(train_loader)*num_epochs) as progress:
+  with tqdm(total=num_epochs) as progress:
     for epoch in range(num_epochs):
       for i , (x, y) in enumerate(train_loader):
         x = x.to(device)
@@ -52,19 +52,25 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
         optimizer.zero_grad()
         loss = model.log_prob(x)
         loss = -loss.mean()
-        # loss = torch.log(loss)
-
         loss.backward()
         optimizer.step()
 
         running_loss += loss.item()
 
-        progress.set_description(f'l: {model.num_layers} lr: {lr:.8} e: {epoch} l: {loss.item():.2f}')
-        progress.update()
-
         if i % 100 == 99:
           losses.append(running_loss / 100)
           running_loss = 0
+          
+      for i , (x, y) in enumerate(train_loader):
+        x = x.to(device)
+        y = y.to(device)
+        z, log_det = model(x)
+        model.update_gmm(z)
+
+      progress.set_description(
+          f'l: {model.num_layers} lr: {lr:.8} e: {epoch}'
+        )
+      progress.update()
 
       if epoch % save_iters == 0:
         torch.save(
@@ -73,22 +79,26 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
             'optimizer_state_dict': optimizer.state_dict(),
             'epoch': epoch,
             'loss': loss
-          }, f'chkpt/backup/mnist_gmm_fixed_{model.num_layers}_{lr:.8}_{epoch}.tar'
+          }, f'chkpt/backup/mnist_gmm_{model.num_layers}_{lr:.8}_{epoch}.tar'
         )
+      
   
   return model, losses
 
 
 if __name__ == '__main__':
-  train_loader, test_loader = get_mnist(256)
+  batch_size = 512
+  res_net_layers = 10
 
-  # for layers in [2**i for i in [5,6]]:
-  for layers in [1,2,4,8]:
+  train_loader, test_loader, train_set, test_set = get_mnist(batch_size)
+
+  # for layers in [2**i for i in [2,3,4,5,6]]:
+  for layers in [1,2,4,8,16, 32]:
     for lr in [1e-10, 1e-8]:
-      n_epochs = 50
+      n_epochs = 100
       
       model = RealNVP(
-        1, 5, layers, 10, (1,28,28), device, 10
+        1, 5, layers, 10, (1,28,28), device, res_net_layers
       ).to(device)
 
       model, losses = train(model, train_loader, lr, n_epochs, 100)
@@ -96,7 +106,7 @@ if __name__ == '__main__':
       torch.save(
         {
         'model_state_dict': model.state_dict()
-        }, f'chkpt/mnist_gmm_fixed_{layers}_{lr:.8}.tar'
+        }, f'chkpt/mnist_gmm_{layers}_{lr:.8}.tar'
       )
 
       # model.load_state_dict(torch.load('chkpt/test.tar')['model_state_dict'])
@@ -107,5 +117,5 @@ if __name__ == '__main__':
         'losses': losses
       }
 
-      with open(f'chkpt/mnist_gmm_fixed_samples_{layers}_{lr:.8}.pickle','wb') as out:
+      with open(f'chkpt/mnist_gmm_samples_{layers}_{lr:.8}.pickle','wb') as out:
         pickle.dump(out_dict, out)

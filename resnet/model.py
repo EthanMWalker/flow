@@ -7,7 +7,7 @@ from resnet.utils import WNConv2d
 class ResNet(nn.Module):
 
   def __init__(self, in_channels, mid_channels, out_channels, num_blocks=3,
-              kernel_size=1, padding=0, double=True):
+              kernel_size=1, padding=0, double=False):
     super().__init__()
 
     self.double = double
