@@ -1,13 +1,7 @@
 import torch
 import torch.nn as nn
 from resnet import ResNet
-from acflow.utils import Rescale, checkerboard_mask
-
-from enum import IntEnum
-
-class MaskType(IntEnum):
-  CHECKERBOARD = 0
-  CHANNEL_WISE = 1
+from acflow.utils import Rescale, checkerboard_mask, MaskType
 
 class AffineCoupling(nn.Module):
 
