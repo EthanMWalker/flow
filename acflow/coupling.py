@@ -9,6 +9,9 @@ class AffineCoupling(nn.Module):
                 num_blocks=6):
     super().__init__()
 
+    if mask_type == MaskType.CHANNEL_WISE:
+      in_channels //= 2
+
     self.st = ResNet(
       in_channels, mid_channels, 2 * in_channels, num_blocks, 3, 1,
       double=(mask_type == MaskType.CHECKERBOARD)
@@ -34,7 +37,7 @@ class AffineCoupling(nn.Module):
         x = x * s.mul(-1).exp() - t
       else:
         x = (x + t) * s.exp()
-        log_det += s.view(s.size(0), -1).sum(-1)
+        log_det += s.reshape(s.size(0), -1).sum(-1)
 
     
     else:
@@ -42,7 +45,7 @@ class AffineCoupling(nn.Module):
         x_id, x_change = x.chunk(2, dim=1)
       else:
         x_change, x_id = x.chunk(2, dim=1)
-      
+        
       st = self.st(x_id)
       s, t = st.chunk(2, dim=1)
       s = self.rescale(torch.tanh(s))
@@ -52,7 +55,7 @@ class AffineCoupling(nn.Module):
         x_change = x_change * s.mul(-1).exp() - t
       else:
         x_change = (x_change + t) * s.exp()
-        log_det += s.view(s.size(0), -1).sum(-1)
+        log_det += s.reshape(s.size(0), -1).sum(-1)
 
       if self.reverse_mask:
         x = torch.cat((x_id, x_change), dim=1)

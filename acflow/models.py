@@ -54,18 +54,30 @@ class RealNVP(nn.Module):
   def sample(self, sample_size):
     self.update_gmm()
 
-    sample = self.prior.sample(
-      (sample_size,)
-    ).reshape((sample_size, *self.shape))
+    # sample = self.prior.sample(
+    #   (sample_size,)
+    # ).reshape((sample_size, *self.shape))
+
+    sample = torch.randn((sample_size, *self.shape), device=self.device)
 
     sample, log_det = self.forward(sample, reverse=True)
     return sample
   
+  # def log_prob(self, x):
+  #   self.update_gmm()
+  #   z, log_det_j = self.forward(x, reverse=False)
+  #   ll = self.prior.log_prob(z.view(z.size(0), -1))
+  #   ll = ll + log_det_j - np.log(256) * np.prod(z.size()[1:])
+  #   return -ll.mean()
+
   def log_prob(self, x):
-    self.update_gmm()
-    z, log_det_j = self.forward(x, reverse=False)
-    ll = self.prior.log_prob(z.view(z.size(0), -1))
-    return ll + log_det_j - np.log(256) * np.prod(z.size()[1:])
+    z, log_det = self.forward(x, reverse=False)
+    prior_ll = -0.5 * (z ** 2 + np.log(2 * np.pi))
+    prior_ll = prior_ll.view(z.size(0), -1).sum(-1) \
+        - np.log(256) * np.prod(z.size()[1:])
+    ll = prior_ll + log_det
+    nll = -ll.mean()
+    return nll
 
 
 class RealNVPFlows(nn.Module):

@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from acflow import RealNVP
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 
 
@@ -43,7 +43,9 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
   losses = []
   running_loss = 0
 
-  with tqdm(total=num_epochs*len(train_loader)) as progress:
+  batches = len(train_loader)
+
+  with tqdm(total=num_epochs*batches) as progress:
     for epoch in range(num_epochs):
       for i , (x, y) in enumerate(train_loader):
         x = x.to(device)
@@ -51,13 +53,13 @@ def train(model, train_loader, lr, num_epochs=10, save_iters=5):
 
         optimizer.zero_grad()
         loss = model.log_prob(x)
-        loss = -loss.mean()
+        # loss = -loss.mean()
         loss.backward()
         optimizer.step()
 
         running_loss += loss.item()
 
-        if i % 100 == 99:
+        if (i + epoch*batches) % 100 == 99:
           losses.append(running_loss / 100)
           running_loss = 0
 
@@ -87,12 +89,12 @@ if __name__ == '__main__':
   train_loader, test_loader, train_set, test_set = get_mnist(batch_size)
 
   # for layers in [2**i for i in [2,3,4,5,6]]:
-  for layers in [1,2,4,8,16, 32]:
-    for lr in [1e-10, 1e-8]:
-      n_epochs = 100
+  for layers in [2]:
+    for lr in [1e-5, 1e-8]:
+      n_epochs = 30
       
       model = RealNVP(
-        1, 5, layers, 10, (1,28,28), device, res_net_layers
+        1, 16, layers, 10, (1,28,28), device, res_net_layers
       ).to(device)
 
       model, losses = train(model, train_loader, lr, n_epochs, 100)

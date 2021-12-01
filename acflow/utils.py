@@ -39,26 +39,65 @@ def checkerboard_mask(dim1, dim2, reverse, dtype=torch.float32,
 
 def squeeze2x2(x, reverse=False, alt_order=False):
   block_size = 2
+  alt_order = False
+  if alt_order:
+    n, c, h, w = x.size()
 
-  b, c, h, w = x.size()
+    if reverse:
+      if c %4 != 0:
+        raise ValueError('bad c val')
+      c //= 4
+    else:
+      if h % 2 != 0:
+        raise ValueError('bad h val')
 
-  x = x.permute(0,2,3,1)
+      if w % 2 != 0:
+        raise ValueError('bad w val')
+    thing = [
+        [[[1., 0.], [0., 0.]]],
+        [[[0., 0.], [0., 1.]]],
+        [[[0., 1.], [0., 0.]]],
+        [[[0., 0.], [1., 0.]]]
+    ]
+    squeeze_matrix = torch.tensor(thing, dtype=x.dtype, device=x.device)
+    perm_weight = torch.zeros((4*c, c, 2, 2), dtype=x.dtype, device=x.device)
 
-  if reverse:
-    if c %4 != 0:
-      raise ValueError('Bad number of channels, not divisible by 4')
-    x = x.view(b, h, w, c//4, 2, 2)
-    x = x.permute(0,1,4,2,5,3)
-    x = x.contiguous().view(b, 2*h, 2*w, c//4)
+    for i in range(c):
+      slice_0 = slice(i*4, (i+1)*4)
+      slice_1 = slice(i, i+1)
+      perm_weight[slice_0, slice_1, :, :] = squeeze_matrix
+    shuffle_channels = torch.tensor(
+      [i*4 for i in range(c)]
+      + [i*4 + 1 for i in range(c)]
+      + [i*4 + 2 for i in range(c)]
+      + [i*4 + 3 for i in range(c)]
+    )
+    perm_weight = perm_weight[shuffle_channels, :, :, :]
 
+    if reverse:
+      x = F.conv_transpose2d(x, perm_weight, stride=2)
+    else:
+      x = F.conv2d(x, perm_weight, stride=2)
+      
   else:
-    if h%2 != 0 or w%2 != 0:
-      raise ValueError('not even spatial dims')
-    x = x.view(b, h//2, 2, w//2, 2, c)
-    x = x.permute(0,1,3,5,2,4)
-    x = x.contiguous().view(b, h//2, w//2, c*4)
-  
-  x = x.permute(0,3,1,2)
+    b, c, h, w = x.size()
+    x = x.permute(0,2,3,1)
+
+    if reverse:
+      if c %4 != 0:
+        raise ValueError('Bad number of channels, not divisible by 4')
+      x = x.view(b, h, w, c//4, 2, 2)
+      x = x.permute(0,1,4,2,5,3)
+      x = x.contiguous().view(b, 2*h, 2*w, c//4)
+
+    else:
+      if h%2 != 0 or w%2 != 0:
+        raise ValueError('not even spatial dims')
+      x = x.view(b, h//2, 2, w//2, 2, c)
+      x = x.permute(0,1,3,5,2,4)
+      x = x.contiguous().view(b, h//2, w//2, c*4)
+    
+    x = x.permute(0,3,1,2)
 
   return x
 
